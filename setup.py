@@ -22,13 +22,6 @@ setup_args = dict(
 
 
 install_requires = [
-    'pytz',
-    'tzlocal',
-    'injectable',
-    'user-agent',
-    'Pillow',
-    'numpy',
-    'opencv-python',
     'tekleo-common-message-protocol',
     'tekleo-common-utils',
 ]
