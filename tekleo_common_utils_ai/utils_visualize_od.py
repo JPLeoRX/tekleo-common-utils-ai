@@ -34,7 +34,7 @@ class UtilsVisualizeOd:
             box_x2 = prediction.region.x + prediction.region.w
             box_y1 = prediction.region.y
             box_y2 = prediction.region.y + prediction.region.h
-            result_image_cv = cv2.rectangle(image_cv, (box_x1, box_y1), (box_x2, box_y2), color, 1)
+            result_image_cv = cv2.rectangle(result_image_cv, (box_x1, box_y1), (box_x2, box_y2), color, 1)
 
             # Draw label
             #result_image_cv = cv2.putText(result_image_cv, prediction.label, (prediction.region.x, prediction.region.y), cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1,  cv2.LINE_AA)
