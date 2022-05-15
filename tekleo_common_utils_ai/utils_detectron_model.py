@@ -110,7 +110,7 @@ class UtilsDetectronModel:
 
         return results
 
-    def execute_predictor(self, predictor: DefaultPredictor, class_labels: List[str], image_cv: ndarray):
+    def execute_predictor(self, predictor: DefaultPredictor, class_labels: List[str], image_cv: ndarray) -> List[OdPrediction]:
         outputs = predictor(image_cv)
         return self.convert_outputs(class_labels, outputs)
 
