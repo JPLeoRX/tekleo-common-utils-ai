@@ -24,6 +24,9 @@ setup_args = dict(
 install_requires = [
     'tekleo-common-message-protocol',
     'tekleo-common-utils',
+    'labelme',
+    'pycocotools',
+    'imgviz',
 ]
 
 
