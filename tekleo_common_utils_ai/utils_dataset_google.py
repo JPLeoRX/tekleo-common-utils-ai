@@ -44,7 +44,7 @@ class UtilsDatasetGoogle:
             x = bounding_box_annotation['xMin']
             y = bounding_box_annotation['yMin']
             w = bounding_box_annotation['xMax'] - x
-            h = bounding_box_annotation['yMax'] = y
+            h = bounding_box_annotation['yMax'] - y
             od_labeled_box_region = RectangleRelative(x, y, w, h)
             od_labeled_box_label = bounding_box_annotation['displayName']
             od_labeled_box = OdLabeledBox(od_labeled_box_label, od_labeled_box_region)
