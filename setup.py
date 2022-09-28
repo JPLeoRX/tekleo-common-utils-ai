@@ -7,7 +7,7 @@ with open("README.md", "r") as readme_file:
 
 setup_args = dict(
     name='tekleo-common-utils-ai',
-    version='0.0.0.1',
+    version='0.0.0.2',
     description="",
     keywords=[],
     long_description=readme_text,
