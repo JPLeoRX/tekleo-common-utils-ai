@@ -7,13 +7,9 @@ import imgviz
 import labelme
 import numpy
 import pycocotools.mask
-from typing import List, Dict, Tuple, Optional
-import concurrent.futures
-from itertools import repeat
+from typing import List
 from injectable import injectable, autowired, Autowired
-from simplestr import gen_str_repr_eq
-from pydantic import BaseModel
-from tekleo_common_message_protocol import OdSample, OdLabeledBox, RectangleRelative
+from tekleo_common_message_protocol import OdSample
 from tekleo_common_utils import UtilsImage
 
 
@@ -26,8 +22,8 @@ class UtilsDatasetCoco:
     def _build_default_class_labels(self, od_samples: List[OdSample]) -> List[str]:
         class_labels = []
         for s in od_samples:
-            for b in s.boxes:
-                class_labels.append(b.label)
+            for i in s.items:
+                class_labels.append(i.label)
         class_labels = set(class_labels)
         class_labels = list(class_labels)
         class_labels = sorted(class_labels)
@@ -108,11 +104,11 @@ class UtilsDatasetCoco:
 
             masks = {}  # for area
             segmentations = collections.defaultdict(list)  # for segmentation
-            for box in od_sample.boxes:
-                points = [(box.region.x * image_width, box.region.y * image_height), ((box.region.x + box.region.w) * image_width, (box.region.y + box.region.h) * image_height)]
-                label = box.label
+            for item in od_sample.items:
+                points = [(p.x * image_width, p.y * image_height) for p in item.mask]
+                label = item.label
                 group_id = None
-                shape_type = "rectangle"
+                shape_type = "polygon"
                 mask = labelme.utils.shape_to_mask(
                     image_cv.shape[:2], points, shape_type
                 )
