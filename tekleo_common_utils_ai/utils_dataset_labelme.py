@@ -127,7 +127,7 @@ class UtilsDatasetLabelme:
                     (p.x * image_width, p.y * image_height) for p in item.mask
                 ],
                 group_id=None,
-                shape_type="rectangle",
+                shape_type="polygon",
                 flags={}
             )
 
