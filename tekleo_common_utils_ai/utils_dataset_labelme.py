@@ -120,12 +120,11 @@ class UtilsDatasetLabelme:
 
         # Convert all boxes
         shapes = []
-        for box in od_sample.boxes:
+        for item in od_sample.items:
             shape = LabelmeShape(
-                label=box.label,
+                label=item.label,
                 points=[
-                    (box.region.x * image_width, box.region.y * image_height),
-                    ((box.region.x + box.region.w) * image_width, (box.region.y + box.region.h) * image_height)
+                    (p.x * image_width, p.y * image_height) for p in item.mask
                 ],
                 group_id=None,
                 shape_type="rectangle",
