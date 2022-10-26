@@ -3,7 +3,7 @@ from typing import List
 import concurrent.futures
 from itertools import repeat
 from injectable import injectable, autowired, Autowired
-from tekleo_common_message_protocol import OdSample, OdLabeledBox, RectangleRelative
+from tekleo_common_message_protocol import OdSample, OdLabeledItem, PointRelative
 from tekleo_common_utils import UtilsImage
 
 
@@ -43,8 +43,8 @@ class UtilsDatasetPascalvoc:
             w = (xmax - xmin) / image_pil.width
             h = (ymax - ymin) / image_pil.height
 
-            region = RectangleRelative(x, y, w, h)
-            box = OdLabeledBox(label, region)
+            mask = [PointRelative(x, y), PointRelative(x + w, y), PointRelative(x + w, y + h), PointRelative(x, y + h)]
+            box = OdLabeledItem(label, mask)
             boxes.append(box)
 
         return OdSample(name, image_pil, boxes)
