@@ -1,3 +1,7 @@
+import os, warnings
+warnings.simplefilter("ignore")
+os.environ["PYTHONWARNINGS"] = "ignore"
+
 from .utils_dataset_coco import UtilsDatasetCoco
 from .utils_dataset_google import UtilsDatasetGoogle
 from .utils_dataset_labelme import UtilsDatasetLabelme
