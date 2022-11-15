@@ -1,6 +1,7 @@
 from typing import List
 import cv2
 import numpy
+import random
 from numpy import ndarray
 from tekleo_common_message_protocol import OdPrediction
 from tekleo_common_utils import UtilsImage
@@ -16,12 +17,7 @@ class UtilsVisualizeOd:
     def debug_predictions(self, image_cv: ndarray, predictions: List[OdPrediction], class_labels: List[str]):
         result_image_cv = image_cv.copy()
         colors = [
-            (0, 255, 0),
-            (0, 0, 255),
-            (255, 0, 0),
-            (238, 48, 167),
-            (205, 186, 150),
-            (255, 193, 193)
+            (random.randint(50, 235), random.randint(50, 235), random.randint(50, 235)) for i in range(0, 70)
         ]
 
         for prediction in predictions:
