@@ -97,8 +97,11 @@ class DatasetModifierBorder(AbstractDatasetModifier):
             ))
 
         new_name = sample.name
-        if "_mod_border_" in new_name:
-            new_name = new_name + "_" + self.border_type
+        if "_mod_" in new_name:
+            if "_border_" in new_name:
+                new_name = new_name + "_" + self.border_type
+            else:
+                new_name = new_name + "_border_" + self.border_type
         else:
             new_name = sample.name + "_mod_border_" + self.border_type
 

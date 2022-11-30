@@ -45,16 +45,21 @@ class DatasetModifierBrightness(AbstractDatasetModifier):
 
         # Convert back to 255
         brightness_delta = brightness_ratio * 255
-        brightness_value = 255 + brightness_sign * brightness_delta
-
-        print("brightness_ratio=" + str(brightness_ratio) + ", brightness_sign=" + str(brightness_sign) + ", brightness_value=" + str(brightness_value))
+        brightness_value = 255 + int(brightness_sign * brightness_delta)
 
         # Apply to the image
         image_cv = self.utils_opencv.brightness_and_contrast(image_cv, brightness=brightness_value)
         image_pil = self.utils_image.convert_image_cv_to_image_pil(image_cv)
 
+        # Generate new name
+        new_name = sample.name
+        if "_mod_" in new_name:
+            new_name = new_name + "_brightness_" + self.brightness_application[0:4]
+        else:
+            new_name = sample.name + "_mod_brightness_" + self.brightness_application[0:4]
+
         return OdSample(
-            sample.name,
+            new_name,
             image_pil,
             sample.items
         )
