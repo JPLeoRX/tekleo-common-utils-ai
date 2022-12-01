@@ -1,11 +1,9 @@
 import random
 from typing import Tuple, List
-
 from tekleo_common_message_protocol import OdSample, OdLabeledItem, PointRelative
 from tekleo_common_utils import UtilsImage, UtilsOpencv
-from tekleo_common_utils_ai.abstract_dataset_modifier import AbstractDatasetModifier
+from tekleo_common_utils_ai.dataset_modification.abstract_dataset_modifier import AbstractDatasetModifier
 from injectable import injectable, autowired, Autowired
-
 
 
 @injectable
@@ -27,21 +25,21 @@ class DatasetModifierBorder(AbstractDatasetModifier):
 
 
     def apply(self, sample: OdSample) -> OdSample:
+        # Convert image to opencv
         image_pil = sample.image
         image_cv = self.utils_image.convert_image_pil_to_image_cv(image_pil)
         image_width, image_height = self.utils_opencv.get_dimensions_wh(image_cv)
 
-        # Y / X
-        # Only X? Only Y? Both?
-        # Amount of Y / X pixels for the border -> randomized
-        # Border color? BLACK | WHITE | IMAGE MOST FREQUENT COLOR -> randomize? [BLACK, WHITE]
+        # Determine border color and ratio
         border_color = self.random.choice(self.border_colors)
         border_ratio_x = self.random.uniform(self.min_border_ratio, self.max_border_ratio)
         border_ratio_y = self.random.uniform(self.min_border_ratio, self.max_border_ratio)
+
+        # Find pixel border size
         border_size_x = int(image_width * border_ratio_x)
         border_size_y = int(image_height * border_ratio_y)
 
-        # Apply borders
+        # Adjust border size according to type
         if self.border_type == "x":
             border_size_y = 0
         elif self.border_type == "y":
@@ -49,40 +47,17 @@ class DatasetModifierBorder(AbstractDatasetModifier):
         elif self.border_type == "both":
             pass
 
+        # Apply border to the image
         image_cv = self.utils_opencv.border(image_cv, border_size_y, border_size_y, border_size_x, border_size_x, border_color)
         new_image_width, new_image_height = self.utils_opencv.get_dimensions_wh(image_cv)
 
-
-        # # Determine
-        # brightness_ratio = self.random.uniform(self.min_brightness_ratio, self.max_brightness_ratio)
-        #
-        # # Determine the sign
-        # brightness_sign = 1
-        # if self.brightness_application == 'decrease':
-        #     brightness_sign = -1
-        # elif self.brightness_application == 'increase':
-        #     brightness_sign = 1
-        # elif self.brightness_application == 'both':
-        #     should_increase = self.random.choice([True, False])
-        #     if should_increase:
-        #         brightness_sign = 1
-        #     else:
-        #         brightness_sign = - 1
-        #
-        # # Convert back to 255
-        # brightness_delta = brightness_ratio * 255
-        # brightness_value = 255 + brightness_sign * brightness_delta
-        #
-        # print("brightness_ratio=" + str(brightness_ratio) + ", brightness_sign=" + str(brightness_sign) + ", brightness_value=" + str(brightness_value))
-
-        # Apply to the image
-        # image_cv = self.utils_opencv.brightness_and_contrast(image_cv, brightness=brightness_value)
+        # Convert back to pil
         image_pil = self.utils_image.convert_image_cv_to_image_pil(image_cv)
 
+        # Move all mask points
         new_items = []
         for item in sample.items:
             new_mask = []
-
             for point in item.mask:
                 old_pixel_x = int(point.x * image_width)
                 old_pixel_y = int(point.y * image_height)
@@ -90,12 +65,12 @@ class DatasetModifierBorder(AbstractDatasetModifier):
                 moved_pixel_y = old_pixel_y + 1 * border_size_y
                 new_point = PointRelative(moved_pixel_x / new_image_width, moved_pixel_y / new_image_height)
                 new_mask.append(new_point)
-
             new_items.append(OdLabeledItem(
                 item.label,
                 new_mask
             ))
 
+        # Generate new name
         new_name = sample.name
         if "_mod_" in new_name:
             if "_border_" in new_name:
@@ -105,6 +80,7 @@ class DatasetModifierBorder(AbstractDatasetModifier):
         else:
             new_name = sample.name + "_mod_border_" + self.border_type
 
+        # Return new sample
         return OdSample(
             new_name,
             image_pil,
