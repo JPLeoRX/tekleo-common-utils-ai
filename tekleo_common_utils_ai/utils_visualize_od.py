@@ -3,16 +3,19 @@ import cv2
 import numpy
 import random
 from numpy import ndarray
+import imgviz
+import labelme
 from tekleo_common_message_protocol import OdPrediction
-from tekleo_common_utils import UtilsImage
+from tekleo_common_utils import UtilsImage, UtilsOpencv
 from injectable import injectable, autowired, Autowired
 
 
 @injectable
 class UtilsVisualizeOd:
     @autowired
-    def __init__(self, utils_image: Autowired(UtilsImage)):
+    def __init__(self, utils_image: Autowired(UtilsImage), utils_opencv: Autowired(UtilsOpencv)):
         self.utils_image = utils_image
+        self.utils_opencv = utils_opencv
 
     def debug_predictions(self, image_cv: ndarray, predictions: List[OdPrediction], class_labels: List[str]):
         result_image_cv = image_cv.copy()
@@ -44,4 +47,27 @@ class UtilsVisualizeOd:
             mask = cv2.fillPoly(mask_background, [vertices], color)
             result_image_cv = cv2.addWeighted(result_image_cv, 1, mask, 0.4, 0)
 
+        self.utils_image.debug_image_cv(result_image_cv)
+
+    def debug_predictions_coco(self, image_cv: ndarray,  predictions: List[OdPrediction], class_labels: List[str]):
+        # Copy the image and get width/height
+        result_image_cv = image_cv.copy()
+        image_width, image_height = self.utils_opencv.get_dimensions_wh(result_image_cv)
+
+        # Build labels (indexes), masks and captions
+        labels = [class_labels.index(p.label) for p in predictions]
+        masks = [labelme.utils.shape_to_mask(result_image_cv.shape[:2], [(point.x, point.y) for point in prediction.mask], "polygon") for prediction in predictions]
+        captions = [p.label for p in predictions]
+
+        # Render the resulting image
+        result_image_cv = imgviz.instances2rgb(
+            image=result_image_cv,
+            labels=labels,
+            masks=masks,
+            captions=captions,
+            font_size=15,
+            line_width=2,
+        )
+
+        # Show debug window
         self.utils_image.debug_image_cv(result_image_cv)
