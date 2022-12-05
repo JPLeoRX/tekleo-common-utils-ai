@@ -47,7 +47,7 @@ class DatasetModificationPipe:
         samples_to_process = samples.copy()
         if self.behavior_dataset_ratio_to_process != 1.0:
             num_of_samples_to_process = int(self.behavior_dataset_ratio_to_process * len(samples))
-            samples_to_process = self.random.shuffle(samples_to_process)
+            self.random.shuffle(samples_to_process)
             samples_to_process = samples_to_process[0:num_of_samples_to_process]
 
         for sample in samples_to_process:
