@@ -11,6 +11,7 @@ from tekleo_common_utils_ai.dataset_modification.dataset_modifier_blur import Da
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_saturation import DatasetModifierSaturation
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_hue import DatasetModifierHue
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_sharpen import DatasetModifierSharpen
+from tekleo_common_utils_ai.dataset_modification.dataset_modifier_flip import DatasetModifierFlip
 load_injection_container(str(os.path.dirname(tekleo_common_utils.__file__)))
 load_injection_container('../')
 from tekleo_common_utils import UtilsImage
@@ -43,6 +44,8 @@ mod_crop_both = DatasetModifierCrop(0.05, 0.75, "both", 7)
 mod_border_x = DatasetModifierBorder(0.02, 0.08, "x", [(0, 0, 0)], 9)
 mod_border_y = DatasetModifierBorder(0.02, 0.08, "y", [(0, 0, 0)], 8)
 mod_border_both = DatasetModifierBorder(0.02, 0.08, "both", [(0, 0, 0)], 8)
+mod_flip_x = DatasetModifierFlip("x")
+mod_flip_y = DatasetModifierFlip("y")
 
 # Declare pipe
 pipe = DatasetModificationPipe([
@@ -53,7 +56,8 @@ pipe = DatasetModificationPipe([
     mod_blur, mod_sharpen,
     mod_crop_x, mod_crop_y, mod_crop_both,
     mod_border_x, mod_border_y, mod_border_both,
-], behavior_dataset_ratio_to_process=1.0, behavior_random=BehaviorRandom.ALL, behavior_random_seed=7, behavior_chaining=BehaviorChaining.UNIQUE, behavior_originals=BehaviorOriginals.OVERWRITE)
+    mod_flip_x, mod_flip_y
+], behavior_dataset_ratio_to_process=1.0, behavior_random=BehaviorRandom.ALL, behavior_random_seed=7, behavior_chaining=BehaviorChaining.UNIQUE, behavior_originals=BehaviorOriginals.KEEP)
 
 # Apply pipe
 new_samples = pipe.process(samples)

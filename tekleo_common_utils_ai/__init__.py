@@ -14,6 +14,7 @@ from .dataset_modification.dataset_modifier_border import DatasetModifierBorder
 from .dataset_modification.dataset_modifier_brightness import DatasetModifierBrightness
 from .dataset_modification.dataset_modifier_contrast import DatasetModifierContrast
 from .dataset_modification.dataset_modifier_crop import DatasetModifierCrop
+from .dataset_modification.dataset_modifier_flip import DatasetModifierFlip
 from .dataset_modification.dataset_modifier_hue import DatasetModifierHue
 from .dataset_modification.dataset_modifier_saturation import DatasetModifierSaturation
 from .dataset_modification.dataset_modifier_sharpen import DatasetModifierSharpen
@@ -27,6 +28,6 @@ __all__ = [
     UtilsVisualizeOd,
     DatasetModificationPipe, BehaviorRandom, BehaviorChaining, BehaviorOriginals,
     DatasetModifierBlur, DatasetModifierBorder, DatasetModifierBrightness,
-    DatasetModifierContrast, DatasetModifierCrop, DatasetModifierHue,
-    DatasetModifierSaturation, DatasetModifierSharpen,
+    DatasetModifierContrast, DatasetModifierCrop, DatasetModifierFlip,
+    DatasetModifierHue, DatasetModifierSaturation, DatasetModifierSharpen,
 ]
