@@ -37,6 +37,12 @@ class UtilsDatasetCoco:
         # Fill class labels if default
         if class_labels is None or len(class_labels) == 0:
             class_labels = self._build_default_class_labels(od_samples)
+        # Add "ignore" class
+        if "__ignore__" not in class_labels:
+            adjusted_class_labels = []
+            adjusted_class_labels.append("__ignore__")
+            adjusted_class_labels.extend(class_labels)
+            class_labels = adjusted_class_labels
         print('UtilsDatasetCoco.save_samples_to_folder(): class_labels=' + str(class_labels))
 
         # Make sure nested dirs exits
