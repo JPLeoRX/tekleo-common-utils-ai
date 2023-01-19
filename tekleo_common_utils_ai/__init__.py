@@ -7,6 +7,7 @@ from .utils_dataset_google import UtilsDatasetGoogle
 from .utils_dataset_labelme import UtilsDatasetLabelme
 from .utils_dataset_pascalvoc import UtilsDatasetPascalvoc
 from .utils_detectron_model import UtilsDetectronModel
+from .utils_visualize_facial import UtilsVisualizeFacial
 from .utils_visualize_od import UtilsVisualizeOd
 from .dataset_modification.dataset_modification_pipe import DatasetModificationPipe, BehaviorRandom, BehaviorChaining, BehaviorOriginals
 from .dataset_modification.dataset_modifier_blur import DatasetModifierBlur
@@ -25,6 +26,7 @@ __all__ = [
     UtilsDatasetLabelme,
     UtilsDatasetPascalvoc,
     UtilsDetectronModel,
+    UtilsVisualizeFacial,
     UtilsVisualizeOd,
     DatasetModificationPipe, BehaviorRandom, BehaviorChaining, BehaviorOriginals,
     DatasetModifierBlur, DatasetModifierBorder, DatasetModifierBrightness,
