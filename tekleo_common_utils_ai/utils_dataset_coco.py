@@ -7,7 +7,9 @@ import imgviz
 import labelme
 import numpy
 import pycocotools.mask
-from typing import List
+import concurrent.futures
+from itertools import repeat
+from typing import List, Dict
 from injectable import injectable, autowired, Autowired
 from tekleo_common_message_protocol import OdSample
 from tekleo_common_utils import UtilsImage
@@ -45,12 +47,123 @@ class UtilsDatasetCoco:
             class_labels = adjusted_class_labels
         print('UtilsDatasetCoco.save_samples_to_folder(): class_labels=' + str(class_labels))
 
+        # Save samples
+        self._save_samples_to_folder_1_images(od_samples, folder_path, class_labels)
+        self._save_samples_to_folder_2_json(od_samples, folder_path, class_labels)
+
+    def _save_samples_to_folder_1_images(self, od_samples: List[OdSample], folder_path: str, class_labels: List[str]) -> bool:
         # Make sure nested dirs exits
         if not os.path.exists(folder_path + "/JPEGImages"):
             os.makedirs(folder_path + "/JPEGImages")
         if not os.path.exists(folder_path + "/Visualization"):
             os.makedirs(folder_path + "/Visualization")
 
+        # Build class_name_to_id
+        class_name_to_id = {}
+        for i in range(0, len(class_labels)):
+            class_id = i - 1  # starts with -1
+            class_name = class_labels[i]
+            if class_id == -1:
+                assert class_name == "__ignore__"
+                continue
+            class_name_to_id[class_name] = class_id
+
+        # Save samples to image folders in parallel
+        results = []
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=8)
+        for result in executor.map(self._save_samples_to_folder_1_image, od_samples, repeat(folder_path), repeat(class_name_to_id)):
+            results.append(result)
+        return True
+
+    def _save_samples_to_folder_1_image(self, od_sample: OdSample, folder_path: str, class_name_to_id: Dict[str, int]) -> bool:
+        print("UtilsDatasetCoco._save_samples_to_folder_1_image(): Generating coco dataset images from:", od_sample.name)
+
+        # Save JPEGImages
+        image_width = od_sample.image.width
+        image_height = od_sample.image.height
+        out_img_file = folder_path + "/JPEGImages/" + od_sample.name + ".jpg"
+        self.utils_image.save_image_pil(od_sample.image, out_img_file)
+        image_cv = self.utils_image.convert_image_pil_to_image_cv(od_sample.image)
+
+        # No idea why we need it 1
+        masks = {}  # for area
+        segmentations = collections.defaultdict(list)  # for segmentation
+        for item in od_sample.items:
+            points = [(p.x * image_width, p.y * image_height) for p in item.mask]
+            label = item.label
+            group_id = None
+            shape_type = "polygon"
+            mask = labelme.utils.shape_to_mask(
+                image_cv.shape[:2], points, shape_type
+            )
+
+            if group_id is None:
+                group_id = uuid.uuid1()
+
+            instance = (label, group_id)
+
+            if instance in masks:
+                masks[instance] = masks[instance] | mask
+            else:
+                masks[instance] = mask
+
+            if shape_type == "rectangle":
+                (x1, y1), (x2, y2) = points
+                x1, x2 = sorted([x1, x2])
+                y1, y2 = sorted([y1, y2])
+                points = [x1, y1, x2, y1, x2, y2, x1, y2]
+            if shape_type == "circle":
+                (x1, y1), (x2, y2) = points
+                r = numpy.linalg.norm([x2 - x1, y2 - y1])
+                # r(1-cos(a/2))<x, a=2*pi/N => N>pi/arccos(1-x/r)
+                # x: tolerance of the gap between the arc and the line segment
+                n_points_circle = max(int(numpy.pi / numpy.arccos(1 - 1 / r)), 12)
+                i = numpy.arange(n_points_circle)
+                x = x1 + r * numpy.sin(2 * numpy.pi / n_points_circle * i)
+                y = y1 + r * numpy.cos(2 * numpy.pi / n_points_circle * i)
+                points = numpy.stack((x, y), axis=1).flatten().tolist()
+            else:
+                points = numpy.asarray(points).flatten().tolist()
+
+            segmentations[instance].append(points)
+        segmentations = dict(segmentations)
+
+        # No idea why we need it 2
+        for instance, mask in masks.items():
+            cls_name, group_id = instance
+            if cls_name not in class_name_to_id:
+                continue
+            cls_id = class_name_to_id[cls_name]
+
+            mask = numpy.asfortranarray(mask.astype(numpy.uint8))
+            mask = pycocotools.mask.encode(mask)
+            area = float(pycocotools.mask.area(mask))
+            bbox = pycocotools.mask.toBbox(mask).flatten().tolist()
+
+        # Save Visualization
+        viz = image_cv
+        if masks:
+            labels, captions, masks = zip(
+                *[
+                    (class_name_to_id[cnm], cnm, msk)
+                    for (cnm, gid), msk in masks.items()
+                    if cnm in class_name_to_id
+                ]
+            )
+            viz = imgviz.instances2rgb(
+                image=image_cv,
+                labels=labels,
+                masks=masks,
+                captions=captions,
+                font_size=15,
+                line_width=2,
+            )
+        out_viz_file = folder_path + "/Visualization/" + od_sample.name + ".jpg"
+        self.utils_image.save_image_cv(viz, out_viz_file)
+
+        return True
+
+    def _save_samples_to_folder_2_json(self, od_samples: List[OdSample], folder_path: str, class_labels: List[str]) -> bool:
         data = dict(
             info=dict(
                 description=None,
@@ -73,6 +186,7 @@ class UtilsDatasetCoco:
             ],
         )
 
+        # Build class_name_to_id
         class_name_to_id = {}
         for i in range(0, len(class_labels)):
             class_id = i - 1  # starts with -1
@@ -90,10 +204,8 @@ class UtilsDatasetCoco:
             od_sample = od_samples[od_sample_index]
             image_width = od_sample.image.width
             image_height = od_sample.image.height
-            print("UtilsDatasetCoco.save_samples_to_folder(): Generating coco dataset from:", od_sample.name)
+            print("UtilsDatasetCoco._save_samples_to_folder_2_json(): Generating coco dataset annotations from:", od_sample.name)
 
-            out_img_file = folder_path + "/JPEGImages/" + od_sample.name + ".jpg"
-            self.utils_image.save_image_pil(od_sample.image, out_img_file)
             image_cv = self.utils_image.convert_image_pil_to_image_cv(od_sample.image)
 
             data["images"].append(
@@ -172,26 +284,6 @@ class UtilsDatasetCoco:
                         iscrowd=0,
                     )
                 )
-
-            viz = image_cv
-            if masks:
-                labels, captions, masks = zip(
-                    *[
-                        (class_name_to_id[cnm], cnm, msk)
-                        for (cnm, gid), msk in masks.items()
-                        if cnm in class_name_to_id
-                    ]
-                )
-                viz = imgviz.instances2rgb(
-                    image=image_cv,
-                    labels=labels,
-                    masks=masks,
-                    captions=captions,
-                    font_size=15,
-                    line_width=2,
-                )
-            out_viz_file = folder_path + "/Visualization/" + od_sample.name + ".jpg"
-            self.utils_image.save_image_cv(viz, out_viz_file)
 
         with open(out_ann_file, "w") as f:
             json.dump(data, f)
