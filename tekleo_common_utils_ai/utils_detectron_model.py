@@ -1,4 +1,5 @@
 import os
+import traceback
 import torch
 import numpy
 import cv2
@@ -22,21 +23,32 @@ class UtilsDetectronModel:
     def is_gpu_available(self) -> bool:
         return torch.cuda.is_available()
 
+    def get_cpu_count(self) -> int:
+        try:
+            return os.cpu_count()
+        except:
+            print(traceback.format_exc())
+            return 4
+
     def build_config(
-            self, model_zoo_config_name: str, number_of_classes: int,
-            dataset_train_name: str, dataset_test_name: str,
+            self, model_zoo_config_name_or_full_config_path: str, is_from_model_zoo: bool,
+            number_of_classes: int, dataset_train_name: str, dataset_test_name: str,
             trained_model_output_dir: str,
             prediction_score_threshold: float,
-            base_lr: float, max_iter: int, batch_size: int
+            base_lr: float, momentum: float, max_iter: int,
+            ims_per_batch: int, batch_size_per_image: int
     ) -> CfgNode:
         trained_model_weights_path = trained_model_output_dir + "/model_final.pth"
 
         cfg = get_cfg()
-        cfg.merge_from_file(model_zoo.get_config_file(model_zoo_config_name))
+        if is_from_model_zoo:
+            cfg.merge_from_file(model_zoo.get_config_file(model_zoo_config_name_or_full_config_path))
+        else:
+            cfg.merge_from_file(model_zoo_config_name_or_full_config_path)
         cfg.DATASETS.TRAIN = (dataset_train_name,)
         cfg.DATASETS.TEST = (dataset_test_name,)
         cfg.OUTPUT_DIR = trained_model_output_dir
-        cfg.DATALOADER.NUM_WORKERS = 8
+        cfg.DATALOADER.NUM_WORKERS = self.get_cpu_count()
 
         # Force CPU
         if not self.is_gpu_available():
@@ -47,11 +59,12 @@ class UtilsDetectronModel:
             cfg.MODEL.WEIGHTS = trained_model_weights_path
 
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = prediction_score_threshold
-        cfg.SOLVER.IMS_PER_BATCH = 4
+        cfg.SOLVER.IMS_PER_BATCH = ims_per_batch
         cfg.SOLVER.BASE_LR = base_lr
+        cfg.SOLVER.MOMENTUM = momentum
         cfg.SOLVER.MAX_ITER = max_iter
         cfg.SOLVER.STEPS = []
-        cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = batch_size
+        cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = batch_size_per_image
         cfg.MODEL.ROI_HEADS.NUM_CLASSES = number_of_classes
         cfg.TEST.DETECTIONS_PER_IMAGE = 100
         return cfg
