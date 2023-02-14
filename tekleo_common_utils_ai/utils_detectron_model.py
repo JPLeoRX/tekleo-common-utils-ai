@@ -35,7 +35,7 @@ class UtilsDetectronModel:
             number_of_classes: int, dataset_train_name: str, dataset_test_name: str,
             trained_model_output_dir: str,
             prediction_score_threshold: float,
-            base_lr: float, momentum: float, max_iter: int,
+            base_lr: float, momentum: float, max_iter: int, warmup_iters: int,
             ims_per_batch: int, batch_size_per_image: int
     ) -> CfgNode:
         trained_model_weights_path = trained_model_output_dir + "/model_final.pth"
@@ -63,6 +63,7 @@ class UtilsDetectronModel:
         cfg.SOLVER.BASE_LR = base_lr
         cfg.SOLVER.MOMENTUM = momentum
         cfg.SOLVER.MAX_ITER = max_iter
+        cfg.SOLVER.WARMUP_ITERS = warmup_iters
         cfg.SOLVER.STEPS = []
         cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = batch_size_per_image
         cfg.MODEL.ROI_HEADS.NUM_CLASSES = number_of_classes
