@@ -2,6 +2,7 @@ import os
 import datetime
 import collections
 import json
+import traceback
 import uuid
 import imgviz
 import labelme
@@ -93,9 +94,13 @@ class UtilsDatasetCoco:
             label = item.label
             group_id = None
             shape_type = "polygon"
-            mask = labelme.utils.shape_to_mask(
-                image_cv.shape[:2], points, shape_type
-            )
+
+            # In case labelme utils fails to build the mask (i.e. something wrong with polygons)
+            try:
+                mask = labelme.utils.shape_to_mask(image_cv.shape[:2], points, shape_type)
+            except Exception as labelme_exception:
+                print("UtilsDatasetCoco._save_samples_to_folder_1_image(): Failed to build a mask for sample: name=" + str(od_sample.name) + ", label=" + str(label))
+                raise RuntimeError(labelme_exception)
 
             if group_id is None:
                 group_id = uuid.uuid1()
