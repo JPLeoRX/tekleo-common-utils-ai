@@ -8,6 +8,7 @@ from tekleo_common_utils_ai.dataset_modification.dataset_modifier_brightness imp
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_contrast import DatasetModifierContrast
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_crop import DatasetModifierCrop
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_blur import DatasetModifierBlur
+from tekleo_common_utils_ai.dataset_modification.dataset_modifier_grayscale import DatasetModifierGrayscale
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_saturation import DatasetModifierSaturation
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_hue import DatasetModifierHue
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_sharpen import DatasetModifierSharpen
@@ -23,8 +24,8 @@ utils_dataset_coco = UtilsDatasetCoco()
 utils_image = UtilsImage()
 
 # Open labelme
-labelme_folder_path = "/Users/leo/tekleo/tekleo-common-utils-ai/tekleo_common_utils_ai/test_utils_dataset_pipes/dataset_labelme_original"
-coco_folder_path = "/Users/leo/tekleo/tekleo-common-utils-ai/tekleo_common_utils_ai/test_utils_dataset_pipes/dataset_coco_modified"
+labelme_folder_path = "/home/leo/tekleo/tekleo-common-utils-ai/tekleo_common_utils_ai/test_utils_dataset_pipes/dataset_labelme_original"
+coco_folder_path = "/home/leo/tekleo/tekleo-common-utils-ai/tekleo_common_utils_ai/test_utils_dataset_pipes/dataset_coco_modified"
 samples = utils_dataset_labelme.load_samples_from_folder(labelme_folder_path)
 
 # Declare modifiers
@@ -46,6 +47,7 @@ mod_border_y = DatasetModifierBorder(0.02, 0.08, "y", [(0, 0, 0)], 8)
 mod_border_both = DatasetModifierBorder(0.02, 0.08, "both", [(0, 0, 0)], 8)
 mod_flip_x = DatasetModifierFlip("x")
 mod_flip_y = DatasetModifierFlip("y")
+mod_grayscale = DatasetModifierGrayscale()
 
 # Declare pipe
 pipe = DatasetModificationPipe([
@@ -56,7 +58,7 @@ pipe = DatasetModificationPipe([
     mod_blur, mod_sharpen,
     mod_crop_x, mod_crop_y, mod_crop_both,
     mod_border_x, mod_border_y, mod_border_both,
-    mod_flip_x, mod_flip_y
+    mod_flip_x, mod_flip_y, mod_grayscale
 ], behavior_dataset_ratio_to_process=1.0, behavior_random=BehaviorRandom.ALL, behavior_random_seed=7, behavior_chaining=BehaviorChaining.UNIQUE, behavior_originals=BehaviorOriginals.KEEP)
 
 # Apply pipe
