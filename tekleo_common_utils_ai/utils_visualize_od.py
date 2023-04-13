@@ -53,6 +53,7 @@ class UtilsVisualizeOd:
         # Copy the image and get width/height
         result_image_cv = image_cv.copy()
         image_width, image_height = self.utils_opencv.get_dimensions_wh(result_image_cv)
+        predictions = sorted(predictions, key = lambda p: p.region.w * p.region.h, reverse = True)
 
         # Build labels (indexes), masks and captions
         labels = [class_labels.index(p.label) for p in predictions]
