@@ -10,6 +10,7 @@ from .utils_detectron_model import UtilsDetectronModel
 from .utils_visualize_facial import UtilsVisualizeFacial
 from .utils_visualize_od import UtilsVisualizeOd
 from .dataset_modification.dataset_modification_pipe import DatasetModificationPipe, BehaviorRandom, BehaviorChaining, BehaviorOriginals
+from .dataset_modification.dataset_modifier_angle90 import DatasetModifierAngle90
 from .dataset_modification.dataset_modifier_blur import DatasetModifierBlur
 from .dataset_modification.dataset_modifier_border import DatasetModifierBorder
 from .dataset_modification.dataset_modifier_brightness import DatasetModifierBrightness
@@ -30,7 +31,7 @@ __all__ = [
     UtilsVisualizeFacial,
     UtilsVisualizeOd,
     DatasetModificationPipe, BehaviorRandom, BehaviorChaining, BehaviorOriginals,
-    DatasetModifierBlur, DatasetModifierBorder, DatasetModifierBrightness,
+    DatasetModifierAngle90, DatasetModifierBlur, DatasetModifierBorder, DatasetModifierBrightness,
     DatasetModifierContrast, DatasetModifierCrop, DatasetModifierFlip, DatasetModifierGrayscale,
     DatasetModifierHue, DatasetModifierSaturation, DatasetModifierSharpen,
 ]

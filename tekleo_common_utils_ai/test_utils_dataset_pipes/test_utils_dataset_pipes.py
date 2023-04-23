@@ -3,6 +3,7 @@ import os
 import tekleo_common_utils
 from injectable import load_injection_container
 from tekleo_common_utils_ai.dataset_modification.dataset_modification_pipe import DatasetModificationPipe, BehaviorRandom, BehaviorChaining, BehaviorOriginals
+from tekleo_common_utils_ai.dataset_modification.dataset_modifier_angle90 import DatasetModifierAngle90
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_border import DatasetModifierBorder
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_brightness import DatasetModifierBrightness
 from tekleo_common_utils_ai.dataset_modification.dataset_modifier_contrast import DatasetModifierContrast
@@ -29,6 +30,8 @@ coco_folder_path = "/home/leo/tekleo/tekleo-common-utils-ai/tekleo_common_utils_
 samples = utils_dataset_labelme.load_samples_from_folder(labelme_folder_path)
 
 # Declare modifiers
+mod_angle90_left = DatasetModifierAngle90("l")
+mod_angle90_right = DatasetModifierAngle90("r")
 mod_brightness_increase = DatasetModifierBrightness(0.08, 0.28, "increase", 7)
 mod_brightness_decrease = DatasetModifierBrightness(0.08, 0.28, "decrease", 7)
 mod_contrast_increase = DatasetModifierContrast(0.05, 0.20, "increase", 7)
@@ -51,6 +54,8 @@ mod_grayscale = DatasetModifierGrayscale()
 
 # Declare pipe
 pipe = DatasetModificationPipe([
+    mod_angle90_left,
+    mod_angle90_right,
     mod_brightness_increase, mod_brightness_decrease,
     mod_contrast_increase, mod_contrast_decrease,
     mod_saturation_increase, mod_saturation_decrease,
