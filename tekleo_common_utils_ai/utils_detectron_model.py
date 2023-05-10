@@ -100,6 +100,15 @@ class UtilsDetectronModel:
             points.append(PointPixel(x, y))
         return points
 
+    def _convert_outputs_build_region_from_mask(self, converted_mask: List[PointPixel]) -> RectanglePixel:
+        list_x = [p.x for p in converted_mask]
+        list_y = [p.y for p in converted_mask]
+        x1 = min(list_x)
+        x2 = max(list_x)
+        y1 = min(list_y)
+        y2 = max(list_y)
+        return RectanglePixel(x1, y1, x2 - x1, y2 - y1)
+
     def convert_outputs(self, class_labels: List[str], outputs) -> List[OdPrediction]:
         results = []
         instances = outputs["instances"].to("cpu")
@@ -117,8 +126,9 @@ class UtilsDetectronModel:
             score = float(scores[i].numpy())
             label_key = int(pred_classes[i].numpy())
             label = class_labels[label_key]
-            region = self._convert_outputs_build_region(pred_boxes[i].tensor.numpy()[0])
+            # region = self._convert_outputs_build_region(pred_boxes[i].tensor.numpy()[0])
             mask = self._convert_outputs_build_mask(mask_array[:, :, i:(i+1)])
+            region = self._convert_outputs_build_region_from_mask(mask)
             prediction = OdPrediction(label, score, region, mask)
             results.append(prediction)
 
