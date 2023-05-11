@@ -17,11 +17,12 @@ class LabelmeShape(BaseModel):
     label: str
     points: List[Tuple[float, float]]
     group_id: Optional[str]
+    description: Optional[str]
     shape_type: str
     flags: Dict[str, str]
 
-    def __init__(self, label: str, points: List[Tuple[float, float]], group_id: str, shape_type: str, flags: Dict[str, str]) -> None:
-        super().__init__(label=label, points=points, group_id=group_id, shape_type=shape_type, flags=flags)
+    # def __init__(self, label: str, points: List[Tuple[float, float]], group_id: str, description: str, shape_type: str, flags: Dict[str, str]) -> None:
+    #     super().__init__(label=label, points=points, group_id=group_id, description=description, shape_type=shape_type, flags=flags)
 
 
 @gen_str_repr_eq
@@ -34,8 +35,8 @@ class LabelmeSample(BaseModel):
     imageHeight: int
     imageWidth: int
 
-    def __init__(self, version: str, flags: Dict[str, str], shapes: List[LabelmeShape], imagePath: str, imageData: str, imageHeight: int, imageWidth: int) -> None:
-        super().__init__(version=version, flags=flags, shapes=shapes, imagePath=imagePath, imageData=imageData, imageHeight=imageHeight, imageWidth=imageWidth)
+    # def __init__(self, version: str, flags: Dict[str, str], shapes: List[LabelmeShape], imagePath: str, imageData: str, imageHeight: int, imageWidth: int) -> None:
+    #     super().__init__(version=version, flags=flags, shapes=shapes, imagePath=imagePath, imageData=imageData, imageHeight=imageHeight, imageWidth=imageWidth)
 #-----------------------------------------------------------------------------------------------------------------------
 
 
