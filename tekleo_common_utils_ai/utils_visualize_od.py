@@ -26,7 +26,7 @@ class UtilsVisualizeOd:
 
         # Colors in BGR
         self.colors = []
-        for i in range(0, 20):
+        for i in range(0, 60):
             color = [self.random.randint(10, 245), self.random.randint(10, 245), self.random.randint(10, 245)]
             self.colors.append(color)
 
@@ -69,15 +69,6 @@ class UtilsVisualizeOd:
         image_width, image_height = self.utils_opencv.get_dimensions_wh(image_cv)
         return 2
 
-    def _debug_predictions_custom_get_font_scale(self, image_cv: ndarray):
-        FONT_SCALE = 4.9e-4  # Adjust for larger font size in all images
-        image_width, image_height = self.utils_opencv.get_dimensions_wh(image_cv)
-        return min(image_width, image_height) * FONT_SCALE
-
-    def _debug_predictions_custom_get_font_thickness(self, image_cv: ndarray):
-        THICKNESS_SCALE = 3.1e-4  # Adjust for larger thickness in all images
-        image_width, image_height = self.utils_opencv.get_dimensions_wh(image_cv)
-        return math.ceil(min(image_width, image_height) * THICKNESS_SCALE)
 
 
 
@@ -124,19 +115,42 @@ class UtilsVisualizeOd:
                 prediction.region.y - self.text_box_padding_s
             )
             return self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
-        elif type == 'bottom-left':
+        elif type == 'center-left':
             point = PointPixel(
                 prediction.region.x - self.text_box_padding_s,
-                prediction.region.y + prediction.region.h + self.text_box_padding_s
+                prediction.region.y + int(prediction.region.h / 2) + self.text_box_padding_s
             )
             coordinates = self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
             return RectanglePixel(coordinates.x - coordinates.w, coordinates.y, coordinates.w, coordinates.h)
+        elif type == 'center-center':
+            point = PointPixel(
+                prediction.region.x + int(prediction.region.w / 2) + self.text_box_padding_s,
+                prediction.region.y + int(prediction.region.h / 2) + self.text_box_padding_s
+            )
+            coordinates = self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
+            return RectanglePixel(coordinates.x - int(coordinates.w / 2), coordinates.y + int(coordinates.h / 2), coordinates.w, coordinates.h)
+        elif type == 'center-right':
+            point = PointPixel(
+                prediction.region.x + prediction.region.w + self.text_box_padding_s,
+                prediction.region.y + int(prediction.region.h / 2) + self.text_box_padding_s
+            )
+            return self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
+        elif type == 'bottom-left':
+            point = PointPixel(
+                prediction.region.x - self.text_box_padding_s,
+                prediction.region.y + prediction.region.h + 2 * self.text_box_padding_s
+            )
+            coordinates = self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
+            return RectanglePixel(coordinates.x - coordinates.w, coordinates.y + int(coordinates.h / 2), coordinates.w, coordinates.h)
         elif type == 'bottom-right':
             point = PointPixel(
                 prediction.region.x + prediction.region.w + self.text_box_padding_s,
-                prediction.region.y + prediction.region.h + self.text_box_padding_s
+                prediction.region.y + prediction.region.h + 2 * self.text_box_padding_s
             )
-            return self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
+            coordinates = self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
+            return RectanglePixel(coordinates.x, coordinates.y + int(coordinates.h / 2), coordinates.w, coordinates.h)
+        else:
+            raise ValueError("Unknown type = " + str(type))
 
     def _do_text_box_coordinates_overlap_with_predictions(self, coordinates: RectanglePixel, predictions: List[OdPrediction]) -> bool:
         for prediction in predictions:
@@ -160,35 +174,36 @@ class UtilsVisualizeOd:
             start_1 = 'top'
         else:
             start_1 = 'bottom'
-        text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, start_1 + '-' + start_2)
 
         # Circle through all potentials
-        if (self._do_text_box_coordinates_overlap_with_predictions(text_box_coordinates, predictions) or self._do_text_box_coordinates_overlap_with_text_boxes(text_box_coordinates, text_boxes)):
-            text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, 'top-left')
-        if (self._do_text_box_coordinates_overlap_with_predictions(text_box_coordinates, predictions) or self._do_text_box_coordinates_overlap_with_text_boxes(text_box_coordinates, text_boxes)):
-            text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, 'bottom-right')
-        if (self._do_text_box_coordinates_overlap_with_predictions(text_box_coordinates, predictions) or self._do_text_box_coordinates_overlap_with_text_boxes(text_box_coordinates, text_boxes)):
-            text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, 'top-right')
-        if (self._do_text_box_coordinates_overlap_with_predictions(text_box_coordinates, predictions) or self._do_text_box_coordinates_overlap_with_text_boxes(text_box_coordinates, text_boxes)):
-            text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, 'bottom-left')
+        found_no_overlaps = False
+        text_box_coordinates = None
+        types = [start_1 + '-' + start_2, 'top-left', 'bottom-left', 'bottom-right', 'top-right', 'center-left', 'center-right']
+        for type in types:
+            text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, type)
+            if (self._do_text_box_coordinates_overlap_with_predictions(text_box_coordinates, predictions) or self._do_text_box_coordinates_overlap_with_text_boxes(text_box_coordinates, text_boxes)):
+                continue
+            elif text_box_coordinates.x < 0 or text_box_coordinates.x + text_box_coordinates.w > image_width:
+                continue
+            elif text_box_coordinates.y < 0 or text_box_coordinates.y + text_box_coordinates.h > image_height:
+                continue
+            else:
+                found_no_overlaps = True
+                break
 
         # Fall back to first position
-        if (self._do_text_box_coordinates_overlap_with_predictions(text_box_coordinates, predictions) or self._do_text_box_coordinates_overlap_with_text_boxes(text_box_coordinates, text_boxes)):
-            text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, 'top-left')
+        if not found_no_overlaps:
+            text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, start_1 + '-' + start_2)
+
+        # text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, 'bottom-left')
 
         return text_box_coordinates
-
-    def _can_insert_top_left(self, prediction: OdPrediction, predictions: List[OdPrediction]) -> bool:
-        pass
-
-    def _can_insert_bottom_right(self) -> bool:
-        pass
     #-------------------------------------------------------------------------------------------------------------------
 
 
     def debug_predictions_custom_cv(
             self, image_cv: ndarray,  predictions: List[OdPrediction], class_labels: List[str],
-            draw_mask: bool = True, draw_border: bool = True, draw_box: bool = True, draw_label: bool = True
+            draw_mask: bool = True, draw_border: bool = True, draw_box: bool = True, draw_label: bool = True, center_label: bool = False
     ) -> ndarray:
         # Copy the image and get width/height and resort predictions
         result_image_cv = image_cv.copy()
@@ -208,6 +223,15 @@ class UtilsVisualizeOd:
             polygon_y_values = [point.y for point in prediction.mask]
             polygon_array = [(x, y) for x, y in zip(polygon_x_values, polygon_y_values)]
             vertices = numpy.array(polygon_array)
+            box_x1, box_x2 = prediction.region.x, prediction.region.x + prediction.region.w
+            box_y1, box_y2 = prediction.region.y, prediction.region.y + prediction.region.h
+
+            # Draw bounding box
+            if draw_box:
+                mask_background = numpy.zeros(shape=image_cv.shape, dtype=numpy.uint8)
+                mask_colored = cv2.rectangle(mask_background.copy(), (box_x1, box_y1), (box_x2, box_y2), color, self._debug_predictions_custom_get_border_thickness(result_image_cv))
+                mask_alpha = cv2.rectangle(mask_background.copy(), (box_x1, box_y1), (box_x2, box_y2), [255, 255, 255], self._debug_predictions_custom_get_border_thickness(result_image_cv))
+                result_image_cv = self.utils_opencv.blend(result_image_cv, mask_colored, mask_alpha, foreground_alpha_factor=0.8)
 
             # Draw polygon mask
             if draw_mask:
@@ -225,7 +249,10 @@ class UtilsVisualizeOd:
 
             # Draw text box
             if draw_label:
-                text_box_coordinates = self._find_best_text_box_coordinates(image_width, image_height, prediction, predictions, text_boxes)
+                if center_label:
+                    text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, 'center-center')
+                else:
+                    text_box_coordinates = self._find_best_text_box_coordinates(image_width, image_height, prediction, predictions, text_boxes)
                 text_boxes.append(text_box_coordinates)
                 result_image_cv = self.utils_opencv.draw_rectangle_rounded(
                     result_image_cv,
@@ -252,11 +279,11 @@ class UtilsVisualizeOd:
 
     def debug_predictions_custom_pil(
             self, image_pil: Image,  predictions: List[OdPrediction], class_labels: List[str],
-            draw_mask: bool = True, draw_border: bool = True, draw_box: bool = True, draw_label: bool = True
+            draw_mask: bool = True, draw_border: bool = True, draw_box: bool = True, draw_label: bool = True, center_label: bool = False
     ) -> Image:
         image_cv = self.utils_image.convert_image_pil_to_image_cv(image_pil)
         result_image_cv = self.debug_predictions_custom_cv(
             image_cv, predictions, class_labels,
-            draw_mask=draw_mask, draw_border=draw_border, draw_box=draw_box, draw_label=draw_label
+            draw_mask=draw_mask, draw_border=draw_border, draw_box=draw_box, draw_label=draw_label, center_label=center_label
         )
         return self.utils_image.convert_image_cv_to_image_pil(result_image_cv)
