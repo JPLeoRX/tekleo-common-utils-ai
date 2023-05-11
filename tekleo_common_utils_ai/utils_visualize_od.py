@@ -7,7 +7,7 @@ from numpy import ndarray
 from PIL.Image import Image
 import imgviz
 import labelme
-from tekleo_common_message_protocol import OdPrediction, RectanglePixel, PointPixel
+from tekleo_common_message_protocol import OdPrediction, OdSample, RectanglePixel, PointPixel
 from tekleo_common_utils import UtilsImage, UtilsOpencv, UtilsMath
 from injectable import injectable, autowired, Autowired
 
@@ -37,6 +37,34 @@ class UtilsVisualizeOd:
         self.text_box_padding_s = 2
         self.text_box_padding_m = 5
 
+
+
+    # Additional visualization tools
+    #-------------------------------------------------------------------------------------------------------------------
+    def convert_od_sample_to_predictions(self, od_sample: OdSample) -> List[OdPrediction]:
+        image_w = od_sample.image.width
+        image_h = od_sample.image.height
+        predictions = []
+        for item in od_sample.items:
+            prediction = OdPrediction(
+                item.label.upper(),
+                100,
+                RectanglePixel(
+                    int(item.get_region().x * image_w),
+                    int(item.get_region().y * image_h),
+                    int(item.get_region().w * image_w),
+                    int(item.get_region().h * image_h)
+                ),
+                [PointPixel(int(p.x * image_w), int(p.y * image_h)) for p in item.mask]
+            )
+            predictions.append(prediction)
+        return predictions
+    #-------------------------------------------------------------------------------------------------------------------
+
+
+
+    # Debug COCO style
+    #-------------------------------------------------------------------------------------------------------------------
     def debug_predictions_coco_cv(self, image_cv: ndarray,  predictions: List[OdPrediction], class_labels: List[str]):
         # Copy the image and get width/height
         result_image_cv = image_cv.copy()
@@ -64,15 +92,11 @@ class UtilsVisualizeOd:
     def debug_predictions_coco_pil(self, image_pil: Image,  predictions: List[OdPrediction], class_labels: List[str]):
         image_cv = self.utils_image.convert_image_pil_to_image_cv(image_pil)
         self.debug_predictions_coco_cv(image_cv, predictions, class_labels)
-
-    def _debug_predictions_custom_get_border_thickness(self, image_cv: ndarray):
-        image_width, image_height = self.utils_opencv.get_dimensions_wh(image_cv)
-        return 2
+    #-------------------------------------------------------------------------------------------------------------------
 
 
 
-
-    # Text placements
+    # Debug custom style - helpers
     #-------------------------------------------------------------------------------------------------------------------
     def _get_text_box_font_size(self, image_width: int, image_height: int) -> float:
         return min(image_width, image_height) * self.text_box_font_size_constant
@@ -201,24 +225,28 @@ class UtilsVisualizeOd:
     #-------------------------------------------------------------------------------------------------------------------
 
 
+
+    # Debug custom style
+    #-------------------------------------------------------------------------------------------------------------------
     def debug_predictions_custom_cv(
             self, image_cv: ndarray,  predictions: List[OdPrediction], class_labels: List[str],
             draw_mask: bool = True, draw_border: bool = True, draw_box: bool = True, draw_label: bool = True, center_label: bool = False
     ) -> ndarray:
-        # Copy the image and get width/height and resort predictions
+        # Copy the image and get width/height
         result_image_cv = image_cv.copy()
         image_width, image_height = self.utils_opencv.get_dimensions_wh(result_image_cv)
+
+        # Resort predictions and initialize text boxes
         predictions = sorted(predictions, key = lambda p: p.region.w * p.region.h, reverse = True)
         text_boxes = []
 
-
-
+        # Go over each prediction
         for prediction in predictions:
             # Determine color
             color_index = class_labels.index(prediction.label)
             color = self.colors[color_index]
 
-            # Determine mask
+            # Determine mask & box
             polygon_x_values = [point.x for point in prediction.mask]
             polygon_y_values = [point.y for point in prediction.mask]
             polygon_array = [(x, y) for x, y in zip(polygon_x_values, polygon_y_values)]
@@ -229,8 +257,8 @@ class UtilsVisualizeOd:
             # Draw bounding box
             if draw_box:
                 mask_background = numpy.zeros(shape=image_cv.shape, dtype=numpy.uint8)
-                mask_colored = cv2.rectangle(mask_background.copy(), (box_x1, box_y1), (box_x2, box_y2), color, self._debug_predictions_custom_get_border_thickness(result_image_cv))
-                mask_alpha = cv2.rectangle(mask_background.copy(), (box_x1, box_y1), (box_x2, box_y2), [255, 255, 255], self._debug_predictions_custom_get_border_thickness(result_image_cv))
+                mask_colored = cv2.rectangle(mask_background.copy(), (box_x1, box_y1), (box_x2, box_y2), color, 2)
+                mask_alpha = cv2.rectangle(mask_background.copy(), (box_x1, box_y1), (box_x2, box_y2), [255, 255, 255], 2)
                 result_image_cv = self.utils_opencv.blend(result_image_cv, mask_colored, mask_alpha, foreground_alpha_factor=0.8)
 
             # Draw polygon mask
@@ -243,8 +271,8 @@ class UtilsVisualizeOd:
             # Draw polygon border
             if draw_border:
                 mask_background = numpy.zeros(shape=image_cv.shape, dtype=numpy.uint8)
-                mask_colored = cv2.polylines(mask_background.copy(), [vertices], True, color, self._debug_predictions_custom_get_border_thickness(result_image_cv))
-                mask_alpha = cv2.polylines(mask_background.copy(), [vertices], True, [255, 255, 255], self._debug_predictions_custom_get_border_thickness(result_image_cv))
+                mask_colored = cv2.polylines(mask_background.copy(), [vertices], True, color, 2)
+                mask_alpha = cv2.polylines(mask_background.copy(), [vertices], True, [255, 255, 255], 2)
                 result_image_cv = self.utils_opencv.blend(result_image_cv, mask_colored, mask_alpha, foreground_alpha_factor=0.8)
 
             # Draw text box
@@ -287,3 +315,4 @@ class UtilsVisualizeOd:
             draw_mask=draw_mask, draw_border=draw_border, draw_box=draw_box, draw_label=draw_label, center_label=center_label
         )
         return self.utils_image.convert_image_cv_to_image_pil(result_image_cv)
+    #-------------------------------------------------------------------------------------------------------------------
