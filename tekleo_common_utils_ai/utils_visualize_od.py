@@ -139,6 +139,13 @@ class UtilsVisualizeOd:
                 prediction.region.y - self.text_box_padding_s
             )
             return self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
+        elif type == 'top-center':
+            point = PointPixel(
+                prediction.region.x + int(prediction.region.w / 2) + self.text_box_padding_s,
+                prediction.region.y - self.text_box_padding_s
+            )
+            coordinates = self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
+            return RectanglePixel(coordinates.x - int(coordinates.w / 2), coordinates.y - coordinates.h, coordinates.w, coordinates.h)
         elif type == 'center-left':
             point = PointPixel(
                 prediction.region.x - self.text_box_padding_s,
@@ -173,6 +180,13 @@ class UtilsVisualizeOd:
             )
             coordinates = self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
             return RectanglePixel(coordinates.x, coordinates.y + int(coordinates.h / 2), coordinates.w, coordinates.h)
+        elif type == 'bottom-center':
+            point = PointPixel(
+                prediction.region.x + int(prediction.region.w / 2) + self.text_box_padding_s,
+                prediction.region.y + prediction.region.h + 2 * self.text_box_padding_s
+            )
+            coordinates = self._get_text_box_coordinates_from_anchor_point(image_width, image_height, point, prediction.label)
+            return RectanglePixel(coordinates.x - int(coordinates.w / 2), coordinates.y + coordinates.h, coordinates.w, coordinates.h)
         else:
             raise ValueError("Unknown type = " + str(type))
 
@@ -202,24 +216,30 @@ class UtilsVisualizeOd:
         # Circle through all potentials
         found_no_overlaps = False
         text_box_coordinates = None
-        types = [start_1 + '-' + start_2, 'top-left', 'bottom-left', 'bottom-right', 'top-right', 'center-left', 'center-right']
+        types = [start_1 + '-' + start_2, 'top-left', 'bottom-left', 'bottom-right', 'top-right', 'top-center', 'center-left', 'center-right', 'bottom-center']
         for type in types:
             text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, type)
-            if (self._do_text_box_coordinates_overlap_with_predictions(text_box_coordinates, predictions) or self._do_text_box_coordinates_overlap_with_text_boxes(text_box_coordinates, text_boxes)):
+            if (self._do_text_box_coordinates_overlap_with_predictions(text_box_coordinates, predictions)):
+                # print('_find_best_text_box_coordinates(): label=' + str(prediction.label) + ' at type=' + str(type) + ' overlaps with predictions')
+                continue
+            elif (self._do_text_box_coordinates_overlap_with_text_boxes(text_box_coordinates, text_boxes)):
+                # print('_find_best_text_box_coordinates(): label=' + str(prediction.label) + ' at type=' + str(type) + ' overlaps with text boxes')
                 continue
             elif text_box_coordinates.x < 0 or text_box_coordinates.x + text_box_coordinates.w > image_width:
+                # print('_find_best_text_box_coordinates(): label=' + str(prediction.label) + ' at type=' + str(type) + ' breaks X boundary')
                 continue
             elif text_box_coordinates.y < 0 or text_box_coordinates.y + text_box_coordinates.h > image_height:
+                # print('_find_best_text_box_coordinates(): label=' + str(prediction.label) + ' at type=' + str(type) + ' breaks Y boundary')
                 continue
             else:
                 found_no_overlaps = True
+                # print('_find_best_text_box_coordinates(): label=' + str(prediction.label) + ' matched to position type=' + str(type))
                 break
 
         # Fall back to first position
         if not found_no_overlaps:
             text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, start_1 + '-' + start_2)
-
-        # text_box_coordinates = self._get_text_box_coordinates(image_width, image_height, prediction, 'bottom-left')
+            # print('_find_best_text_box_coordinates(): label=' + str(prediction.label) + ' did not match to any positions, resetting to default type=' + str(start_1 + '-' + start_2))
 
         return text_box_coordinates
     #-------------------------------------------------------------------------------------------------------------------
